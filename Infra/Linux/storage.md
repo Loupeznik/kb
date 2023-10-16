@@ -65,3 +65,20 @@ master@vm-kube-test-master-01:~$ sudo lvextend -l +100%FREE /dev/ubuntu-vg/ubunt
 # reboot for good measure
 master@vm-kube-test-master-01:~$ sudo reboot
 ```
+
+## Mounting an SMB share
+```shell
+# Install dependencies
+sudo apt install cifs-utils psmisc
+
+# Mount the share
+SHARE_NAME="myshare"
+HOST="MY_IP_OR_HOSTNAME"
+
+sudo mkdir /mnt/$SHARE_NAME
+
+sudo mount -t cifs //$HOST/$SHARE_NAME /mnt/$SHARE_NAME -o username=my_user # specify share username, otherwise will fill current user
+
+# Verify share mounted successfully
+ls /mnt/$SHARE_NAME
+```
