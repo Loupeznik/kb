@@ -1,5 +1,7 @@
 # Troubleshooting guides
+
 ## Troubleshooting RHEL package managers
+
 ```shell
 # Problem
 $ sudo rpmdb --rebuilddb -v

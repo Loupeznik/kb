@@ -1,6 +1,9 @@
 # Services
+
 ## Adding a basic Systemd service
+
 Create a file `/etc/systemd/system/my-service.service`
+
 ```toml
 [Unit]
 Description=MY SERVICE
@@ -16,8 +19,11 @@ PrivateTmp=true
 [Install]
 WantedBy=multi-user.target
 ```
+
 ## Adding a Systemd service for a .NET application
+
 Run `sudo vi /etc/systemd/system/ts3viewer2.service`
+
 ```toml
 [Unit]
 Description=TS3Viewer2 API

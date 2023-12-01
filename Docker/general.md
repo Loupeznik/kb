@@ -1,6 +1,9 @@
 # General
+
 ## Find out if I am inside a Docker container
+
 **PHP example**
+
 ```php
 public function __construct()
 {
@@ -9,13 +12,15 @@ public function __construct()
   {
     $this->env = Yaml::parseFile($_SERVER["DOCUMENT_ROOT"] . '/.env.yml');
   }
-  else 
+  else
   {
-      $this->env = Yaml::parseFile(__DIR__ . '/../../.env.yml'); 
+      $this->env = Yaml::parseFile(__DIR__ . '/../../.env.yml');
   }
 }
 ```
+
 **Bash example**
+
 ```shell
 #!/bin/bash
 if [ -f /.dockerenv ]; then
@@ -26,12 +31,14 @@ fi
 ```
 
 ## Update container restart policy
+
 ```shell
 CONTAINER_NAME="my_container"
 sudo docker update --restart=always $CONTAINER_NAME
 ```
 
 ## Access host services
+
 Use `host.docker.internal` or default gateway of the Docker interface
 
 ## Clear local Docker data and shrink virtual storage

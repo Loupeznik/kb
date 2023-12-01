@@ -1,6 +1,7 @@
 # Storage
 
 ## Mounting a new disk
+
 ```shell
 # Find the new device
 lsblk
@@ -8,7 +9,7 @@ lsblk
 # Partition and format the disk (use the device ID from the previous step)
 sudo parted /dev/sdb
 (parted) mklabel gpt
-(parted) mkpart primary ext4 0% 100% # use 100% of the available space 
+(parted) mkpart primary ext4 0% 100% # use 100% of the available space
 (parted) quit
 
 sudo mkfs.ext4 /dev/sdb1
@@ -30,6 +31,7 @@ sudo vi /etc/fstab
 ## Disk resize
 
 ### Partition + LVM
+
 ```shell
 master@vm-kube-test-master-01:~$ lsblk
 NAME                      MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
@@ -67,6 +69,7 @@ master@vm-kube-test-master-01:~$ sudo reboot
 ```
 
 ## Mounting an SMB share
+
 ```shell
 # Install dependencies
 sudo apt install cifs-utils psmisc

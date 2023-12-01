@@ -1,6 +1,9 @@
 # Certbot
+
 ## Installing Certbot
+
 Most universal way is to install Certbot via `pip`:
+
 ```shell
 sudo apt install python3 python3-venv libaugeas0
 sudo python3 -m venv /opt/certbot
