@@ -85,3 +85,13 @@ sudo mount -t cifs //$HOST/$SHARE_NAME /mnt/$SHARE_NAME -o username=my_user # sp
 # Verify share mounted successfully
 ls /mnt/$SHARE_NAME
 ```
+
+## Get size of directories
+
+Sorting by size from largest to smallest
+
+```shell
+DIR="/opt"
+
+du -h --max-depth=1 $DIR | sort -hr
+```
