@@ -28,6 +28,24 @@ sudo vi /etc/fstab
 /dev/sdb1   /mnt/storage   ext4   defaults   0  2
 ```
 
+Alternatively, the partition can be identified by UUID or LABEL in fstab. This is safer as the device ID can change after a reboot, especially if more disks are available.
+
+```shell
+# Get the UUID or label of the partition
+sudo blkid /dev/sdb1
+
+# Add the following line to /etc/fstab
+UUID=YOUR_UUID   /mnt/storage   ext4   defaults   0  2
+
+# Or use the LABEL
+
+# If it is not set yet, create a label on the partition
+sudo e2label /dev/sdb1 storage
+
+# Add the following line to /etc/fstab
+LABEL=storage   /mnt/storage   ext4   defaults   0  2
+```
+
 ## Disk resize
 
 ### Partition + LVM
