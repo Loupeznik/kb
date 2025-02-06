@@ -12,7 +12,9 @@ wget https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd
 # Customize the image
 virt-customize -a debian-12-generic-amd64.qcow2 --install qemu-guest-agent --root-password password:securePassword123 \
 --append-line "/etc/ssh/sshd_config.d/rootlogin.conf":"PermitRootLogin yes" \
---append-line "/etc/ssh/sshd_config.d/rootlogin.conf":"PasswordAuthentication yes" \
+--append-line "/etc/ssh/sshd_config.d/rootlogin.conf":"PasswordAuthentication no" \
+--append-line "/etc/ssh/sshd_config.d/rootlogin.conf":"AuthorizedKeysFile .ssh/authorized_keys" \
+--append-line "/etc/ssh/sshd_config.d/rootlogin.conf":"PubkeyAuthentication yes" \
 --firstboot-command 'ssh-keygen -A && systemctl restart sshd'
 
 # Create and setup the VM
