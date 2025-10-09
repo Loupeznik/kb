@@ -1,4 +1,4 @@
-# Azure Kubernetes Service (AKS)
+# Basics
 
 ## RBAC integration with Azure Active Directory
 
