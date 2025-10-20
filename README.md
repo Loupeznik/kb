@@ -1,6 +1,6 @@
 # Knowledgebase
 
-For the full contets visit [https://loupeznik.github.io/kb/](https://loupeznik.github.io/kb/intro) or see the markdown files in `website/docs`.
+For the full contents visit [https://loupeznik.github.io/kb/](https://loupeznik.github.io/kb/intro) or see the markdown files in `website/docs`.
 
 Personal knowledgebase, mostly dealing with:
 
