@@ -1211,13 +1211,201 @@ containers:
       --username $AZURE_CLIENT_ID \
       --tenant $AZURE_TENANT_ID \
       --federated-token "$(cat $AZURE_FEDERATED_TOKEN_FILE)"
-    
+
     az storage blob download \
       --account-name mystorageaccount \
       --container mycontainer \
       --name myfile.txt \
       --file /tmp/myfile.txt \
       --auth-mode login
+```
+
+### Use Case 4: Mount Azure Blob Storage with CSI Driver
+
+**Overview:** Mount Azure Blob Storage as a volume in your pods using the Azure Blob CSI driver with workload identity authentication.
+
+**Prerequisites:**
+- Azure Blob CSI driver enabled on AKS (enabled by default on AKS 1.21+)
+- Existing storage account and container
+- Workload identity configured (Steps 1-5 above)
+
+**Required Azure RBAC Permission:**
+- `Storage Blob Data Contributor` role on the storage account
+
+**Implementation Steps:**
+
+1. **Assign Storage Permissions**
+
+```bash
+# Get storage account resource ID
+STORAGE_ACCOUNT_ID=$(az storage account show \
+  --name mystorageaccount \
+  --resource-group my-storage-rg \
+  --query id -o tsv)
+
+# Assign Storage Blob Data Contributor role
+az role assignment create \
+  --assignee $IDENTITY_PRINCIPAL_ID \
+  --role "Storage Blob Data Contributor" \
+  --scope $STORAGE_ACCOUNT_ID
+```
+
+2. **Create PersistentVolume**
+
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: blob-storage-pv
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: blob-storage-sc
+  mountOptions:
+    - -o allow_other
+    - --file-cache-timeout-in-seconds=120
+    - --use-attr-cache=true
+  csi:
+    driver: blob.csi.azure.com
+    readOnly: false
+    volumeHandle: my-storage-rg#mystorageaccount#mycontainer
+    volumeAttributes:
+      resourcegroup: my-storage-rg
+      storageaccount: mystorageaccount
+      containerName: mycontainer
+      clientID: <MANAGED_IDENTITY_CLIENT_ID>
+      mountWithWorkloadIdentityToken: "true"
+```
+
+3. **Create PersistentVolumeClaim**
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: blob-storage-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: blob-storage-sc
+  volumeName: blob-storage-pv
+  resources:
+    requests:
+      storage: 10Gi
+```
+
+4. **Deploy Application with Mounted Storage**
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: azure-workload-identity-sa
+      containers:
+      - name: myapp
+        image: nginx:latest
+        volumeMounts:
+        - name: blob-storage
+          mountPath: /mnt/blob
+      volumes:
+      - name: blob-storage
+        persistentVolumeClaim:
+          claimName: blob-storage-pvc
+```
+
+**Key Configuration Points:**
+
+- **volumeHandle format:** `{resource-group}#{storage-account}#{container}`
+- **mountWithWorkloadIdentityToken:** Set to `"true"` to use token-based authentication
+- **clientID:** The managed identity's client ID from Step 2
+- **Pod label:** `azure.workload.identity/use: "true"` is required
+- **Service account:** Must reference the service account with workload identity annotation
+
+**Verification:**
+
+```bash
+# Check PVC status
+kubectl get pvc blob-storage-pvc -n default
+
+# Verify mount in pod
+POD_NAME=$(kubectl get pods -n default -l app=myapp -o jsonpath='{.items[0].metadata.name}')
+kubectl exec $POD_NAME -n default -- ls -la /mnt/blob
+
+# Test write access
+kubectl exec $POD_NAME -n default -- touch /mnt/blob/test-file.txt
+kubectl exec $POD_NAME -n default -- ls /mnt/blob
+```
+
+**Notes:**
+- The CSI driver uses blobfuse with the FUSE protocol for Standard tier storage accounts
+- For production workloads, consider Premium tier storage accounts with NFS protocol (requires Hierarchical Namespace)
+- Workload identity tokens expire after 24 hours but are automatically refreshed
+- The storage container must exist before creating the PersistentVolume
+
+**Common Issues:**
+
+*Issue: Pod fails to mount with "failed to list keys" or "AuthorizationFailed"*
+
+This occurs when the CSI driver attempts to use storage account key authentication instead of workload identity tokens.
+
+**Solution:** Ensure `mountWithWorkloadIdentityToken: "true"` is set in the PersistentVolume's `volumeAttributes`. This parameter tells the CSI driver to use workload identity token-based authentication instead of trying to retrieve storage account keys.
+
+```bash
+# Verify PV configuration
+kubectl get pv blob-storage-pv -o yaml | grep -A 5 volumeAttributes
+
+# Should show:
+#   mountWithWorkloadIdentityToken: "true"
+```
+
+*Issue: PVC stuck in "Pending" state with "ProvisioningFailed" when using dynamic provisioning*
+
+The CSI driver tries to create a container that already exists, or lacks permissions to create containers.
+
+**Solution:** Use static provisioning (as shown above) instead of dynamic provisioning when working with existing containers. Static provisioning uses a pre-created PersistentVolume that references the existing container, avoiding container creation attempts.
+
+*Issue: Incorrect volumeHandle format causes mount failures*
+
+**Solution:** The volumeHandle must follow the exact format: `{resource-group}#{storage-account}#{container}`. Use `#` as separator, not `-` or `/`.
+
+```yaml
+# Correct format
+volumeHandle: my-rg#mystorageaccount#mycontainer
+
+# Incorrect formats
+volumeHandle: mystorageaccount-mycontainer  # Wrong separator
+volumeHandle: my-rg/mystorageaccount/mycontainer  # Wrong separator
+```
+
+*Issue: Mount works but pod cannot access files (permission denied)*
+
+**Solution:** Verify the managed identity has the correct role assignment:
+
+```bash
+# Check role assignments on storage account
+az role assignment list \
+  --scope /subscriptions/{subscription-id}/resourceGroups/{rg}/providers/Microsoft.Storage/storageAccounts/{storage-account} \
+  --query "[?principalId=='$IDENTITY_PRINCIPAL_ID'].{Role:roleDefinitionName,Scope:scope}" \
+  -o table
+
+# Should show "Storage Blob Data Contributor"
 ```
 
 ---
