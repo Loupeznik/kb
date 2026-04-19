@@ -76,13 +76,13 @@ master@vm-kube-test-master-01:~$ sudo apt install cloud-utils
 # resize sda3
 master@vm-kube-test-master-01:~$ sudo growpart /dev/sda 3
 
-# resize lvm
-master@vm-kube-test-master-01:~$ sudo resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv
-
-# extend lvm for the changes to take effect
+# extend lvm
 master@vm-kube-test-master-01:~$ sudo lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
 
-# reboot for good measure
+# resize the filesystem
+master@vm-kube-test-master-01:~$ sudo resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv
+
+# optional - reboot is not necessary
 master@vm-kube-test-master-01:~$ sudo reboot
 ```
 
